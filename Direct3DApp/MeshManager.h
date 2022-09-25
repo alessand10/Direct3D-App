@@ -1,8 +1,11 @@
 #pragma once
+#include <DoubleLinkedList.h>
+#include "Common.h"
 
-/** Used to import, store and manage meshes. Meshes
-* are stored as a linked list
-*/
+
 class MeshManager {
-	class Mesh* head;
+	DoubleLinkedList<unique_ptr<class Mesh>> meshes;
+	
+public:
+	class Mesh* importMeshFromOBJ(const char* file);
 };

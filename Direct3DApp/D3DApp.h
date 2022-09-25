@@ -3,18 +3,28 @@
 #include "Common.h"
 #include <d3d11.h>
 #include <DirectXMath.h>
+#include "PixelShader.h"
+#include "VertexShader.h"
+#include <vector>
+#include "Mesh.h"
 
-using DirectX::XMFLOAT3;
-using DirectX::XMFLOAT4;
+using std::vector;
 
 class D3DApp {
 	HWND viewportWindow;
+	WNDCLASSEX viewportClass;
+
+	vector<Mesh> meshes = {};
+
+	ID3D11PixelShader* bindedPixelShader;
+	ID3D11VertexShader* bindedVertexShader;
 
 	/*  */
 	ComPtr<ID3D11Device> device;
 	ComPtr<ID3D11DeviceContext> deviceContext;
 	D3D_FEATURE_LEVEL usedFeatureLevel;
 	ComPtr<IDXGISwapChain> swapchain;
+	ComPtr<ID3D11InputLayout> inputLayout;
 
 	/* Textures */
 	ComPtr<ID3D11Texture2D> depthStencilTex;
@@ -27,11 +37,6 @@ class D3DApp {
 	ComPtr<ID3D11Buffer> vertexBuffer;
 	ComPtr<ID3D11Buffer> indexBuffer;
 
-	struct Vertex {
-		XMFLOAT4 position;
-	};
-
-
 	float backgroundColour[4]{0.f, 0.f, 0.f, 1.f};
 
 public:
@@ -39,14 +44,17 @@ public:
 	D3DApp();
 	void createWindow(InitializationData* initData);
 	void initializeApp(InitializationData* initData);
-	void createDeviceAndContext();
-	void createSwapChain(InitializationData* initData);
-	void createRenderTargetView();
-	void createDepthStencilView(InitializationData* initData);
+	HRESULT createDeviceAndContext();
+	HRESULT createSwapChain(InitializationData* initData);
+	HRESULT createRenderTargetView();
+	HRESULT createDepthStencilView(InitializationData* initData);
 	void setupOMState();
 	void setupViewport(InitializationData* initData);
-	void createAndBindVertexBuffer();
-	void createAndBindIndexBuffer();
+	HRESULT createAndBindVertexBuffer();
+	HRESULT createAndBindIndexBuffer();
+	HRESULT createAndBindInputLayout(void* vertexShaderBytecode, SIZE_T bytecodeLength);
+	void bindPixelShader(ID3D11PixelShader* pixelShader);
+	void bindVertexShader(ID3D11VertexShader* vertexShader);
 	void render();
 };
 

@@ -1,5 +1,6 @@
 #include "D3DApp.h"
 #include <d3d11.h>
+#include "AppTypes.h"
 
 D3DApp::D3DApp()
 {
@@ -7,8 +8,6 @@ D3DApp::D3DApp()
 }
 
 void D3DApp::createWindow(InitializationData* initData) {
-	WNDCLASSEX viewportClass;
-
 	viewportClass.lpszClassName = L"Viewport";
 	viewportClass.hInstance = initData->hInstance;
 	viewportClass.lpfnWndProc = DefWindowProc;
@@ -25,10 +24,10 @@ void D3DApp::createWindow(InitializationData* initData) {
 
 	viewportWindow = CreateWindowExW(0L,
 		L"Viewport",
-		0, WS_VISIBLE ,
+		L"Viewport", WS_VISIBLE | WS_OVERLAPPEDWINDOW,
 		initData->position[0], initData->position[1],
-		initData->resolution[0], initData->resolution[0],
-		NULL, NULL, initData->hInstance,
+		initData->resolution[0], initData->resolution[1],
+		NULL, HMENU(0), initData->hInstance,
 		NULL);
 }
 
@@ -39,16 +38,24 @@ void D3DApp::initializeApp(InitializationData* initData)
 	createSwapChain(initData);
 	createRenderTargetView();
 	createDepthStencilView(initData);
+	setupOMState();
+	setupViewport(initData);
+	createAndBindVertexBuffer();
+	createAndBindIndexBuffer();
+
+	//pShader.initialize("C:/Users/Alessandro Genovese/source/repos/Direct3DApp/Debug/TestPixelShader.cso", device.Get());
+	//deviceContext->PSSetShader(pShader.pixelShader.Get(), nullptr, 0);
+
 }
 
-void D3DApp::createDeviceAndContext()
+HRESULT D3DApp::createDeviceAndContext()
 {
 	const int numFeatureLevels = 1;
 	D3D_FEATURE_LEVEL supportedFeatureLevels[numFeatureLevels] = { D3D_FEATURE_LEVEL_11_1 };
-	D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, NULL, supportedFeatureLevels, numFeatureLevels, D3D11_SDK_VERSION, device.GetAddressOf(), &usedFeatureLevel, deviceContext.GetAddressOf());
+	return D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, supportedFeatureLevels, numFeatureLevels, D3D11_SDK_VERSION, device.GetAddressOf(), &usedFeatureLevel, deviceContext.GetAddressOf());
 }
 
-void D3DApp::createSwapChain(InitializationData* initData)
+HRESULT D3DApp::createSwapChain(InitializationData* initData)
 {
 	IDXGIDevice* dxgiDevice;
 	device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
@@ -75,16 +82,16 @@ void D3DApp::createSwapChain(InitializationData* initData)
 	swapChainDesc.SampleDesc.Quality = 0;
 
 
-	dxgiFactory->CreateSwapChain(dxgiDevice, &swapChainDesc, swapchain.GetAddressOf());
+	return dxgiFactory->CreateSwapChain(dxgiDevice, &swapChainDesc, swapchain.GetAddressOf());
 }
 
-void D3DApp::createRenderTargetView() {
+HRESULT D3DApp::createRenderTargetView() {
 	ID3D11Texture2D* backbuffer = nullptr;
 	swapchain->GetBuffer(0U, __uuidof(ID3D11Texture2D), (void**)&backbuffer);
-	device->CreateRenderTargetView(backbuffer, nullptr, renderTargetView.GetAddressOf());
+	return device->CreateRenderTargetView(backbuffer, nullptr, renderTargetView.GetAddressOf());
 }
 
-void D3DApp::createDepthStencilView(InitializationData* initData) {
+HRESULT D3DApp::createDepthStencilView(InitializationData* initData) {
 	D3D11_TEXTURE2D_DESC depthStencilTexDesc;
 	depthStencilTexDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	depthStencilTexDesc.ArraySize = 1U;
@@ -98,8 +105,9 @@ void D3DApp::createDepthStencilView(InitializationData* initData) {
 	depthStencilTexDesc.SampleDesc.Count = 1U;
 	depthStencilTexDesc.SampleDesc.Quality = 0U;
 
-	device->CreateTexture2D(&depthStencilTexDesc, nullptr, depthStencilTex.GetAddressOf());
-	device->CreateDepthStencilView(depthStencilTex.Get(), nullptr, depthStencilView.GetAddressOf());
+	HRESULT result = device->CreateTexture2D(&depthStencilTexDesc, nullptr, depthStencilTex.GetAddressOf());
+	if (FAILED(result)) return result;
+	return device->CreateDepthStencilView(depthStencilTex.Get(), nullptr, depthStencilView.GetAddressOf());
 }
 
 void D3DApp::setupOMState() {
@@ -119,7 +127,8 @@ void D3DApp::setupViewport(InitializationData* initData)
 	deviceContext->RSSetViewports(1, &d3dViewport);
 }
 
-void D3DApp::createAndBindVertexBuffer() {
+HRESULT D3DApp::createAndBindVertexBuffer() {
+	HRESULT result;
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.ByteWidth = sizeof(Vertex) * 1000;
@@ -127,12 +136,20 @@ void D3DApp::createAndBindVertexBuffer() {
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	vertexBufferDesc.ByteWidth = sizeof(Vertex);
-	device->CreateBuffer(&vertexBufferDesc, 0, vertexBuffer.GetAddressOf());
-	deviceContext->IASetVertexBuffers(0U, 1U, vertexBuffer.GetAddressOf(), nullptr, nullptr);
+	UINT stridesAndOffsets = { 0 };
+
+	if (FAILED(result = device->CreateBuffer(&vertexBufferDesc,
+		0,
+		vertexBuffer.GetAddressOf())))
+		return result;
+
+	deviceContext->IASetVertexBuffers(0U, 1U, vertexBuffer.GetAddressOf(), &stridesAndOffsets, &stridesAndOffsets);
+	return result;
 }
 
-void D3DApp::createAndBindIndexBuffer()
+HRESULT D3DApp::createAndBindIndexBuffer()
 {
+	HRESULT result;
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.ByteWidth = sizeof(UINT) * 1000;
@@ -140,12 +157,66 @@ void D3DApp::createAndBindIndexBuffer()
 	indexBufferDesc.MiscFlags = 0;
 	indexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	indexBufferDesc.ByteWidth = sizeof(UINT);
-	device->CreateBuffer(&indexBufferDesc, 0, indexBuffer.GetAddressOf());
+
+	if (FAILED(result = device->CreateBuffer(&indexBufferDesc,
+		0,
+		indexBuffer.GetAddressOf())))
+		return result;
+
 	deviceContext->IASetIndexBuffer(indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0U);
+	return result;
+}
+
+
+/**
+ * @brief Creates an input layout and binds it to the IA.
+ * @note This input layout object can be reused with any vertex shader as long as the shader's input signature matches the input layout.
+ */
+HRESULT D3DApp::createAndBindInputLayout(void* vertexShaderBytecode, SIZE_T bytecodeLength) {
+	HRESULT result;
+	const int numDescs = 1;
+
+	D3D11_INPUT_ELEMENT_DESC inputElementDescs[numDescs] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0U, 0U, D3D11_INPUT_PER_VERTEX_DATA, 0U}
+	};
+
+	if (FAILED(result = device->CreateInputLayout(inputElementDescs,
+		numDescs,
+		vertexShaderBytecode,
+		bytecodeLength,
+		inputLayout.GetAddressOf()))) 
+		return result;
+
+	deviceContext->IASetInputLayout(inputLayout.Get());
+	return result;
+}
+
+/**
+ * @brief Binds a pixel shader to the pipeline if not already bound.
+ */
+void D3DApp::bindPixelShader(ID3D11PixelShader* pixelShader) {
+	if (pixelShader != bindedPixelShader) {
+		deviceContext->PSSetShader(pixelShader, nullptr, 0);
+		bindedPixelShader = pixelShader;
+	}
+}
+
+
+/**
+ * @brief Binds a vertex shader to the pipeline if not already bound.
+ */
+void D3DApp::bindVertexShader(ID3D11VertexShader* vertexShader) {
+	if (vertexShader != bindedVertexShader) {
+		deviceContext->VSSetShader(vertexShader, nullptr, 0);
+		bindedVertexShader = vertexShader;
+	}
 }
 
 void D3DApp::render() {
 	deviceContext->ClearRenderTargetView(renderTargetView.Get(), backgroundColour);
 	deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0U);
-	deviceContext->DrawIndexed(3, 0U, 0U);
+
+	
+
+	swapchain->Present(0U, 0U);
 }
