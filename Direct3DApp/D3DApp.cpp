@@ -8,8 +8,7 @@ D3DApp::D3DApp()
 
 }
 
-ID3D11Device* D3DApp::getDevice()
-{
+ID3D11Device* D3DApp::getDevice() {
 	return device.Get();
 }
 
@@ -17,7 +16,8 @@ ID3D11Device* D3DApp::getDevice()
  * @brief Registers a simple window class for the viewport and creates the window.
  * @param initData The data passed to the app for initialization purposes.
  */
-void D3DApp::createWindow(InitializationData* initData) {
+void D3DApp::createWindow(InitializationData* initData) 
+{
 	viewportClass.lpszClassName = L"Viewport";
 	viewportClass.hInstance = initData->hInstance;
 	viewportClass.lpfnWndProc = DefWindowProc;
@@ -45,7 +45,7 @@ void D3DApp::createWindow(InitializationData* initData) {
  * @brief Initializes the app by calling the application's helper methods in the necessary order.
  * @param initData The data passed to the app for initialization purposes.
  */
-void D3DApp::initializeApp(InitializationData* initData)
+void D3DApp::initializeApp(InitializationData* initData) 
 {
 	createWindow(initData);
 	createDeviceAndContext();
@@ -64,7 +64,7 @@ void D3DApp::initializeApp(InitializationData* initData)
  * @brief Creates a D3D11 device.
  * @return The result of the device creation call.
  */
-HRESULT D3DApp::createDeviceAndContext()
+HRESULT D3DApp::createDeviceAndContext() 
 {
 	const int numFeatureLevels = 1;
 	D3D_FEATURE_LEVEL supportedFeatureLevels[numFeatureLevels] = { D3D_FEATURE_LEVEL_11_1 };
@@ -75,7 +75,7 @@ HRESULT D3DApp::createDeviceAndContext()
  * @brief Creates a DXGI Swapchain.
  * @return The result of the swapchain creation call.
  */
-HRESULT D3DApp::createSwapChain(InitializationData* initData)
+HRESULT D3DApp::createSwapChain(InitializationData* initData) 
 {
 	IDXGIDevice* dxgiDevice;
 	device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
@@ -110,7 +110,8 @@ HRESULT D3DApp::createSwapChain(InitializationData* initData)
  * @brief Creates the render target view from the swapchain-provided backbuffer.
  * @return The result of the create render target view call.
  */
-HRESULT D3DApp::createRenderTargetView() {
+HRESULT D3DApp::createRenderTargetView() 
+{
 	ID3D11Texture2D* backbuffer = nullptr;
 	swapchain->GetBuffer(0U, __uuidof(ID3D11Texture2D), (void**)&backbuffer);
 	return device->CreateRenderTargetView(backbuffer, nullptr, renderTargetView.GetAddressOf());
@@ -120,7 +121,8 @@ HRESULT D3DApp::createRenderTargetView() {
  * @brief Creates a new Texture2D resource to be used as the depth stencil texture, and its associated resource view.
  * @return The result of the create texture call if it fails, or the result of the create depth stencil view call.
  */
-HRESULT D3DApp::createDepthStencilView(InitializationData* initData) {
+HRESULT D3DApp::createDepthStencilView(InitializationData* initData) 
+{
 	D3D11_TEXTURE2D_DESC depthStencilTexDesc;
 	depthStencilTexDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	depthStencilTexDesc.ArraySize = 1U;
@@ -142,14 +144,15 @@ HRESULT D3DApp::createDepthStencilView(InitializationData* initData) {
 /**
  * @brief Sets up the output merger stage of the pipeline by binding the render target and depth stencil resource views.
  */
-void D3DApp::setupOMState() {
+void D3DApp::setupOMState() 
+{
 	deviceContext->OMSetRenderTargets(1U, renderTargetView.GetAddressOf(), depthStencilView.Get());
 }
 
 /**
  * @brief Defines and passes a viewport to the rasterizer stage of the pipeline.
  */
-void D3DApp::setupViewport(InitializationData* initData)
+void D3DApp::setupViewport(InitializationData* initData) 
 {
 	D3D11_VIEWPORT d3dViewport;
 	d3dViewport.Width = initData->resolution[0];
@@ -166,7 +169,8 @@ void D3DApp::setupViewport(InitializationData* initData)
  * @note The buffer is created with the DYNAMIC usage flag to allow for CPU writes to the vertex buffer.
  * @return The result of the create buffer call.
  */
-HRESULT D3DApp::createAndBindVertexBuffer() {
+HRESULT D3DApp::createAndBindVertexBuffer() 
+{
 	HRESULT result;
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -175,14 +179,15 @@ HRESULT D3DApp::createAndBindVertexBuffer() {
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	vertexBufferDesc.StructureByteStride = sizeof(Vertex);
-	UINT stridesAndOffsets = { 0 };
+	UINT strides[] = { Vertex().getStride()};
+	UINT offsets[] = {0};
 
 	if (FAILED(result = device->CreateBuffer(&vertexBufferDesc,
 		0,
 		vertexBuffer.GetAddressOf())))
 		return result;
 
-	deviceContext->IASetVertexBuffers(0U, 1U, vertexBuffer.GetAddressOf(), &stridesAndOffsets, &stridesAndOffsets);
+	deviceContext->IASetVertexBuffers(0U, 1U, vertexBuffer.GetAddressOf(), strides, offsets);
 	return result;
 }
 
@@ -192,7 +197,7 @@ HRESULT D3DApp::createAndBindVertexBuffer() {
  * @note The buffer is created with the DYNAMIC usage flag to allow for CPU writes to the index buffer.
  * @return The result of the create buffer call.
  */
-HRESULT D3DApp::createAndBindIndexBuffer()
+HRESULT D3DApp::createAndBindIndexBuffer() 
 {
 	HRESULT result;
 	D3D11_BUFFER_DESC indexBufferDesc;
@@ -218,14 +223,14 @@ HRESULT D3DApp::createAndBindIndexBuffer()
  * @note This input layout object can be reused with any vertex shader as long as the shader's input signature matches the input layout.
  * @return The result of the create input layout call.
  */
-HRESULT D3DApp::createAndBindInputLayout() {
+HRESULT D3DApp::createAndBindInputLayout() 
+{
 	HRESULT result;
 	const UINT numDescs = 3;
-
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[numDescs] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0U, 0U, D3D11_INPUT_PER_VERTEX_DATA, 0U},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1U, 0U, D3D11_INPUT_PER_VERTEX_DATA, 0U},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 2U, 0U, D3D11_INPUT_PER_VERTEX_DATA, 0U}
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1U, 16U, D3D11_INPUT_PER_VERTEX_DATA, 0U},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 2U, 32U, D3D11_INPUT_PER_VERTEX_DATA, 0U}
 	};
 
 	unique_ptr<char[]> byteCode = nullptr;
@@ -245,7 +250,7 @@ HRESULT D3DApp::createAndBindInputLayout() {
 }
 
 
-HRESULT D3DApp::createAndBindConstantBuffer()
+HRESULT D3DApp::createAndBindConstantBuffer() 
 {
 	HRESULT result;
 	D3D11_BUFFER_DESC constantBufferDesc;
@@ -264,7 +269,8 @@ HRESULT D3DApp::createAndBindConstantBuffer()
 /**
  * @brief Binds a pixel shader to the pipeline if not already bound.
  */
-void D3DApp::bindPixelShader(ID3D11PixelShader* pixelShader) {
+void D3DApp::bindPixelShader(ID3D11PixelShader* pixelShader) 
+{
 	if (pixelShader != bindedPixelShader) {
 		deviceContext->PSSetShader(pixelShader, nullptr, 0);
 		bindedPixelShader = pixelShader;
@@ -275,7 +281,8 @@ void D3DApp::bindPixelShader(ID3D11PixelShader* pixelShader) {
 /**
  * @brief Binds a vertex shader to the pipeline if not already bound.
  */
-void D3DApp::bindVertexShader(ID3D11VertexShader* vertexShader) {
+void D3DApp::bindVertexShader(ID3D11VertexShader* vertexShader) 
+{
 	if (vertexShader != bindedVertexShader) {
 		deviceContext->VSSetShader(vertexShader, nullptr, 0);
 		bindedVertexShader = vertexShader;
@@ -287,8 +294,7 @@ void D3DApp::bindVertexShader(ID3D11VertexShader* vertexShader) {
  * @note A change will only occur if the binded shaders are different from this mesh's shaders.
  * @param mesh The mesh to set up the pipeline for.
  */
-void D3DApp::setPipelineStateForRendering(Mesh* mesh)
-{
+void D3DApp::setPipelineStateForRendering(Mesh* mesh){
 	bindVertexShader(mesh->meshVertexShader->vertexShader.Get());
 	bindPixelShader(mesh->meshPixelShader->pixelShader.Get());
 }
@@ -299,7 +305,7 @@ void D3DApp::setPipelineStateForRendering(Mesh* mesh)
  * @note By default, the application will render the mesh.
  * @param mesh The mesh to add to the application.
  */
-void D3DApp::addMesh(Mesh* mesh)
+void D3DApp::addMesh(Mesh* mesh) 
 {
 	meshes.push_back(mesh);
 	D3D11_MAPPED_SUBRESOURCE mappedBuffer;
@@ -321,12 +327,12 @@ void D3DApp::addMesh(Mesh* mesh)
 /**
  * @brief Renders all the non-hidden meshes in the application.
  */
-void D3DApp::render() {
+void D3DApp::render() 
+{
 	deviceContext->ClearRenderTargetView(renderTargetView.Get(), backgroundColour);
 	deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0U);
 
 	constBufferPerFrame.worldViewProj = camera.generateWorldViewProjMatrix(XMMatrixIdentity());
-
 	deviceContext->UpdateSubresource(constantBuffer.Get(), 0U, nullptr, (void*)&constBufferPerFrame, 0U, 0U);
 
 	for (Mesh* mesh : meshes) {

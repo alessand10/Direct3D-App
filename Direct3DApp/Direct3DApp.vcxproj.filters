@@ -67,7 +67,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="TestPixelShader.hlsl">
+    <FxCompile Include="PixelShader.hlsl">
       <Filter>Header Files</Filter>
     </FxCompile>
     <FxCompile Include="VertexShader.hlsl">

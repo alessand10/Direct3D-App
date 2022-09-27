@@ -10,7 +10,7 @@
  */
 Camera::Camera(float defFOV, float defAspectRatio, float defNearZ, float defFarZ)
 {
-    location = XMVECTOR{ 0.f, 0.f, 5.f, 1.f };
+    location = XMVECTOR{ 10.f, 10.f, 10.f, 1.f };
     viewDirection = XMVECTOR{ 0.f, 0.f, 0.f, 1.f };
     upDirection = XMVECTOR{ 0.f, 1.f, 0.f, 1.f };
     fovInRadians = defFOV;
