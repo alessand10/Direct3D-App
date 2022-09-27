@@ -7,8 +7,8 @@ using std::vector;
 
 class Mesh {
 public:
-	UINT startIndex;
-	UINT indexCount;
+	UINT startIDBIndex;
+	UINT startVBIndex;
 	class VertexShader* meshVertexShader;
 	class PixelShader* meshPixelShader;
 
@@ -16,5 +16,8 @@ public:
 	vector<UINT> indices = {};
 
 	void importFromOBJ(const char* file);
-	void setPipelineStateForRendering(class D3DApp* app);
+	void setPixelShader(class PixelShader* ps);
+	void setVertexShader(class VertexShader* vs);
+	UINT getVertexCount();
+	UINT getIndexCount();
 };

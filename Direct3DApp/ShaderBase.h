@@ -4,5 +4,4 @@
 
 class ShaderBase {
 protected:
-	SIZE_T importShaderBytecode(const char* filePath, char** output);
 };

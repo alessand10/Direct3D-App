@@ -1,9 +1,10 @@
 #include "PixelShader.h"
+#include "D3DApp.h"
+#include "FileReader.h"
 
-void PixelShader::initialize(const char* byteCodeFile, ID3D11Device* device)
+PixelShader::PixelShader(const char* byteCodeFile, D3DApp* app)
 {
-	char* byteCode = nullptr;
-	SIZE_T byteCodeLength = importShaderBytecode(byteCodeFile, &byteCode);
-	device->CreatePixelShader(byteCode, byteCodeLength, nullptr, &pixelShader);
-	delete[] byteCode;
+	unique_ptr<char[]> byteCode = nullptr;
+	SIZE_T byteCodeLength = FileReader::readAllContentsOfFile(byteCodeFile, &byteCode);
+	app->getDevice()->CreatePixelShader(byteCode.get(), byteCodeLength, nullptr, &pixelShader);
 }

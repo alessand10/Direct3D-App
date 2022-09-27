@@ -7,6 +7,8 @@
 #include "VertexShader.h"
 #include <vector>
 #include "Mesh.h"
+#include "AppTypes.h"
+#include "Camera.h"
 
 using std::vector;
 
@@ -14,17 +16,23 @@ class D3DApp {
 	HWND viewportWindow;
 	WNDCLASSEX viewportClass;
 
-	vector<Mesh> meshes = {};
+	CBuffer constBufferPerFrame;
 
-	ID3D11PixelShader* bindedPixelShader;
-	ID3D11VertexShader* bindedVertexShader;
+	/* App */
+	Camera camera;
+	vector<Mesh*> meshes = {};
+	UINT nextFreeVBIndex = 0;
+	UINT nextFreeIDBIndex = 0;
+	float backgroundColour[4]{ 0.f, 0.f, 0.f, 1.f };
 
-	/*  */
+	/* Pipeline Objects */
 	ComPtr<ID3D11Device> device;
 	ComPtr<ID3D11DeviceContext> deviceContext;
 	D3D_FEATURE_LEVEL usedFeatureLevel;
 	ComPtr<IDXGISwapChain> swapchain;
 	ComPtr<ID3D11InputLayout> inputLayout;
+	ID3D11PixelShader* bindedPixelShader;
+	ID3D11VertexShader* bindedVertexShader;
 
 	/* Textures */
 	ComPtr<ID3D11Texture2D> depthStencilTex;
@@ -36,12 +44,12 @@ class D3DApp {
 	/* Buffers */
 	ComPtr<ID3D11Buffer> vertexBuffer;
 	ComPtr<ID3D11Buffer> indexBuffer;
-
-	float backgroundColour[4]{0.f, 0.f, 0.f, 1.f};
+	ComPtr<ID3D11Buffer> constantBuffer;
 
 public:
 	struct InitializationData;
 	D3DApp();
+	ID3D11Device* getDevice();
 	void createWindow(InitializationData* initData);
 	void initializeApp(InitializationData* initData);
 	HRESULT createDeviceAndContext();
@@ -52,10 +60,15 @@ public:
 	void setupViewport(InitializationData* initData);
 	HRESULT createAndBindVertexBuffer();
 	HRESULT createAndBindIndexBuffer();
-	HRESULT createAndBindInputLayout(void* vertexShaderBytecode, SIZE_T bytecodeLength);
+	HRESULT createAndBindInputLayout();
+	HRESULT createAndBindConstantBuffer();
 	void bindPixelShader(ID3D11PixelShader* pixelShader);
 	void bindVertexShader(ID3D11VertexShader* vertexShader);
+	void addMesh(Mesh* mesh);
 	void render();
+
+private:
+	void setPipelineStateForRendering(Mesh* mesh);
 };
 
 struct D3DApp::InitializationData {

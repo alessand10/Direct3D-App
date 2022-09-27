@@ -4,5 +4,5 @@
 class PixelShader : public ShaderBase {
 public:
 	ComPtr<ID3D11PixelShader> pixelShader;
-	void initialize(const char* byteCodeFile, ID3D11Device* device);
+	PixelShader(const char* byteCodeFile, class D3DApp* app);
 };

@@ -1,9 +1,10 @@
 #include "VertexShader.h"
+#include "D3DApp.h"
+#include "FileReader.h"
 
-VertexShader::VertexShader(const char* byteCodeFile, ID3D11Device* device)
+VertexShader::VertexShader(const char* byteCodeFile, D3DApp* app)
 {
-	char* byteCode = nullptr;
-	SIZE_T byteCodeLength = importShaderBytecode(byteCodeFile, &byteCode);
-	device->CreateVertexShader((void*)byteCode, byteCodeLength, nullptr, vertexShader.GetAddressOf());
-	delete[] byteCode;
+	unique_ptr<char[]> byteCode = nullptr;
+	SIZE_T byteCodeSize = FileReader::readAllContentsOfFile(byteCodeFile, &byteCode);
+	app->getDevice()->CreateVertexShader(byteCode.get(), byteCodeSize, nullptr, vertexShader.GetAddressOf());
 }
