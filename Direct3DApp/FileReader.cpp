@@ -12,10 +12,16 @@ size_t FileReader::readAllContentsOfFile(const char* filePath, unique_ptr<char[]
 {
 	size_t fileLength = 0;
 	std::fstream file;
+
+	// Open file for reading by starting at the end of the file.
 	file.open(filePath, std::fstream::in | std::ios::binary | std::fstream::ate);
 	if (file.is_open()) {
+		
+		// Get length by finding current position in file (current position is end).
 		fileLength = file.tellg();
 		file.seekg(0, std::ios::beg);
+
+		// Create array for output by using the determined length.
 		*output = std::make_unique<char[]>(fileLength);
 		file.read((*output).get(), fileLength);
 	}

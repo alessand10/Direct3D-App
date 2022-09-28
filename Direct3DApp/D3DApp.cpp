@@ -237,7 +237,7 @@ HRESULT D3DApp::createAndBindInputLayout()
 	};
 
 	unique_ptr<char[]> byteCode = nullptr;
-	SIZE_T bytecodeLength = FileReader::readAllContentsOfFile("C:/Users/Alessandro Genovese/source/repos/Direct3DApp/Debug/VertexShader.cso", &byteCode);
+	SIZE_T bytecodeLength = FileReader::readAllContentsOfFile("../Debug/VertexShader.cso", &byteCode);
 
 	if (FAILED(result = device->CreateInputLayout(inputElementDescs,
 		numDescs,
@@ -246,6 +246,8 @@ HRESULT D3DApp::createAndBindInputLayout()
 		inputLayout.GetAddressOf()))) 
 		return result;
 
+	// Delete bytecode after using it for the input layout.
+	byteCode.reset();
 	deviceContext->IASetInputLayout(inputLayout.Get());
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -313,14 +315,18 @@ void D3DApp::addMesh(Mesh* mesh)
 {
 	meshes.push_back(mesh);
 	D3D11_MAPPED_SUBRESOURCE mappedBuffer;
+
+	// Write new vertices from mesh into vertex buffer starting from the next available space in memory (nextFreeVBIndex).
 	deviceContext->Map(vertexBuffer.Get(), 0U, D3D11_MAP_WRITE_NO_OVERWRITE, 0U, &mappedBuffer);
 	std::copy(mesh->vertices.begin(), mesh->vertices.end(), &(static_cast<Vertex*>(mappedBuffer.pData)[nextFreeVBIndex]));
 	deviceContext->Unmap(vertexBuffer.Get(), 0U);
 
+	// Write new indices from mesh into index buffer starting from the next available space in memory (nextFreeIDBIndex).
 	deviceContext->Map(indexBuffer.Get(), 0U, D3D11_MAP_WRITE_NO_OVERWRITE, 0U, &mappedBuffer);
 	std::copy(mesh->indices.begin(), mesh->indices.end(), &(static_cast<UINT*>(mappedBuffer.pData)[nextFreeIDBIndex]));
 	deviceContext->Unmap(indexBuffer.Get(), 0U);
 
+	// Provide the mesh with its location within the index/vertex buffers.
 	mesh->startIDBIndex = nextFreeIDBIndex;
 	mesh->startVBIndex = nextFreeVBIndex;
 

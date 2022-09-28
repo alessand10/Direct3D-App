@@ -42,6 +42,7 @@ void Camera::setNearAndFarClippingPlane(float nearZ, float farZ)
  */
 XMMATRIX Camera::generateWorldViewProjMatrix(XMMATRIX world)
 {
+    // Compute the transpose so that the matrix is in the correct form to be used in hlsl.
     return XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(world, getViewMatrix()), getProjMatrix()));
 }
 
