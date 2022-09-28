@@ -65,7 +65,12 @@ HRESULT D3DApp::createDeviceAndContext()
 {
 	const int numFeatureLevels = 1;
 	D3D_FEATURE_LEVEL supportedFeatureLevels[numFeatureLevels] = { D3D_FEATURE_LEVEL_11_1 };
-	return D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, supportedFeatureLevels, numFeatureLevels, D3D11_SDK_VERSION, device.GetAddressOf(), &usedFeatureLevel, deviceContext.GetAddressOf());
+
+	return D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE,
+		NULL, D3D11_CREATE_DEVICE_DEBUG,
+		supportedFeatureLevels, numFeatureLevels,
+		D3D11_SDK_VERSION, device.GetAddressOf(),
+		&usedFeatureLevel, deviceContext.GetAddressOf());
 }
 
 /**
@@ -98,7 +103,6 @@ HRESULT D3DApp::createSwapChain(InitializationData* initData)
 	swapChainDesc.SampleDesc.Count = 1;
 	swapChainDesc.SampleDesc.Quality = 0;
 
-
 	return dxgiFactory->CreateSwapChain(dxgiDevice, &swapChainDesc, swapchain.GetAddressOf());
 }
 
@@ -111,6 +115,7 @@ HRESULT D3DApp::createRenderTargetView()
 {
 	ID3D11Texture2D* backbuffer = nullptr;
 	swapchain->GetBuffer(0U, __uuidof(ID3D11Texture2D), (void**)&backbuffer);
+
 	return device->CreateRenderTargetView(backbuffer, nullptr, renderTargetView.GetAddressOf());
 }
 
@@ -158,6 +163,7 @@ void D3DApp::setupViewport(InitializationData* initData)
 	d3dViewport.MinDepth = 0.0f;
 	d3dViewport.TopLeftX = static_cast<float>(initData->position[0]);
 	d3dViewport.TopLeftY = static_cast<float>(initData->position[1]);
+
 	deviceContext->RSSetViewports(1, &d3dViewport);
 }
 
@@ -257,6 +263,7 @@ HRESULT D3DApp::createAndBindConstantBuffer()
 	constantBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	constantBufferDesc.StructureByteStride = sizeof(CBuffer);
 	constantBufferDesc.MiscFlags = 0U;
+
 	if (FAILED(result = device->CreateBuffer(&constantBufferDesc, nullptr, constantBuffer.GetAddressOf()))) return result;
 	deviceContext->VSSetConstantBuffers(0U, 1U, { constantBuffer.GetAddressOf() });
 	return result;
