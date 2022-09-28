@@ -45,13 +45,16 @@ class D3DApp {
 	ComPtr<ID3D11Buffer> vertexBuffer;
 	ComPtr<ID3D11Buffer> indexBuffer;
 	ComPtr<ID3D11Buffer> constantBuffer;
-
 public:
 	struct InitializationData;
-	D3DApp();
 	ID3D11Device* getDevice();
-	void createWindow(InitializationData* initData);
 	void initializeApp(InitializationData* initData);
+	void addMesh(Mesh* mesh);
+	void render();
+
+private:
+	void setPipelineStateForRendering(Mesh* mesh);
+	void createWindow(InitializationData* initData);
 	HRESULT createDeviceAndContext();
 	HRESULT createSwapChain(InitializationData* initData);
 	HRESULT createRenderTargetView();
@@ -64,11 +67,6 @@ public:
 	HRESULT createAndBindConstantBuffer();
 	void bindPixelShader(ID3D11PixelShader* pixelShader);
 	void bindVertexShader(ID3D11VertexShader* vertexShader);
-	void addMesh(Mesh* mesh);
-	void render();
-
-private:
-	void setPipelineStateForRendering(Mesh* mesh);
 };
 
 struct D3DApp::InitializationData {

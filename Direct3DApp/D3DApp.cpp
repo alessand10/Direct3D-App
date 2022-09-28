@@ -1,12 +1,9 @@
 #include "D3DApp.h"
 #include <d3d11.h>
 #include "AppTypes.h"
+#include "ViewportWindowProc.h"
 #include "FileReader.h"
 
-D3DApp::D3DApp()
-{
-
-}
 
 ID3D11Device* D3DApp::getDevice() {
 	return device.Get();
@@ -20,7 +17,7 @@ void D3DApp::createWindow(InitializationData* initData)
 {
 	viewportClass.lpszClassName = L"Viewport";
 	viewportClass.hInstance = initData->hInstance;
-	viewportClass.lpfnWndProc = DefWindowProc;
+	viewportClass.lpfnWndProc = ViewportWndProc;
 	viewportClass.hIcon = LoadIconW(initData->hInstance, NULL); //Don't care about Icon right now
 	viewportClass.hCursor = LoadCursorW(initData->hInstance, IDC_HAND);
 	viewportClass.cbSize = sizeof(WNDCLASSEX);
@@ -155,12 +152,12 @@ void D3DApp::setupOMState()
 void D3DApp::setupViewport(InitializationData* initData) 
 {
 	D3D11_VIEWPORT d3dViewport;
-	d3dViewport.Width = initData->resolution[0];
-	d3dViewport.Height = initData->resolution[1];
+	d3dViewport.Width = static_cast<float>(initData->resolution[0]);
+	d3dViewport.Height = static_cast<float>(initData->resolution[1]);
 	d3dViewport.MaxDepth = 1.0f;
 	d3dViewport.MinDepth = 0.0f;
-	d3dViewport.TopLeftX = initData->position[0];
-	d3dViewport.TopLeftY = initData->position[1];
+	d3dViewport.TopLeftX = static_cast<float>(initData->position[0]);
+	d3dViewport.TopLeftY = static_cast<float>(initData->position[1]);
 	deviceContext->RSSetViewports(1, &d3dViewport);
 }
 

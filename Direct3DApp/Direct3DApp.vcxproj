@@ -146,6 +146,7 @@
     <ClCompile Include="PixelShader.cpp" />
     <ClCompile Include="ShaderBase.cpp" />
     <ClCompile Include="VertexShader.cpp" />
+    <ClCompile Include="ViewportWindowProc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppTypes.h" />
@@ -157,6 +158,7 @@
     <ClInclude Include="PixelShader.h" />
     <ClInclude Include="ShaderBase.h" />
     <ClInclude Include="VertexShader.h" />
+    <ClInclude Include="ViewportWindowProc.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">

@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "D3DApp.h"
+#include <iostream>
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nShowCmd)
@@ -8,8 +9,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 	D3DApp::InitializationData appInitData{ hInstance, CreateSolidBrush(RGB(0, 0, 0)) };
 	app.initializeApp(&appInitData);
 
-	VertexShader cubeVS("C:/Users/Alessandro Genovese/source/repos/Direct3DApp/Debug/VertexShader.cso", &app);
-	PixelShader cubePS("C:/Users/Alessandro Genovese/source/repos/Direct3DApp/Debug/PixelShader.cso", &app);
+	VertexShader cubeVS("../Debug/VertexShader.cso", &app);
+	PixelShader cubePS("../Debug/PixelShader.cso", &app);
 
 	Mesh mesh;
 	mesh.importFromOBJ("C:/Users/Alessandro Genovese/Desktop/cube.obj");
@@ -22,6 +23,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 	mesh2.setPixelShader(&cubePS);
 	mesh2.setVertexShader(&cubeVS);
 	app.addMesh(&mesh2);
+
+	TCHAR NPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, NPath);
+	std::cout << NPath;
+
 
 	MSG msg = {};
 	while (msg.message != WM_QUIT) {

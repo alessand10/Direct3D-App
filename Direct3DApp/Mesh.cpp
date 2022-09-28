@@ -6,6 +6,10 @@
 #include <fstream>
 #include <string>
 
+/**
+ * @brief Imports a mesh from a .obj file.
+ * @param file The path to the file containing the mesh.
+ */
 void Mesh::importFromOBJ(const char* file)
 {
 	std::ifstream fileObject(file, std::ios::in | std::ios::binary);
@@ -40,10 +44,18 @@ void Mesh::importFromOBJ(const char* file)
 	}
 }
 
+/**
+ * @brief Sets the pixel shader to be used for this mesh.
+ * @param ps The pixel shader to use.
+ */
 void Mesh::setPixelShader(PixelShader* ps) {
 	meshPixelShader = ps;
 }
 
+/**
+ * @brief Sets the vertex shader to be used for this mesh.
+ * @param vs The vertex shader to use.
+ */
 void Mesh::setVertexShader(VertexShader* vs) {
 	meshVertexShader = vs;
 }
