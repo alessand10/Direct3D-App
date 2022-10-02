@@ -3,7 +3,10 @@
 #include "AppTypes.h"
 #include "ViewportWindowProc.h"
 #include "FileReader.h"
-
+#include "AppTimer.h"
+#include <string>
+#include <math.h>
+#include "Utilities.h"
 
 ID3D11Device* D3DApp::getDevice() {
 	return device.Get();
@@ -55,6 +58,7 @@ void D3DApp::initializeApp(InitializationData* initData)
 	createAndBindIndexBuffer();
 	createAndBindConstantBuffer();
 	createAndBindInputLayout();
+	appRef = this;
 }
 
 /**
@@ -334,11 +338,104 @@ void D3DApp::addMesh(Mesh* mesh)
 	nextFreeIDBIndex += mesh->getIndexCount();
 }
 
+
+/**
+ * @brief Handles the mouse move message passed by the windows procedure.
+ * @note The mousePrevX and mousePrevY variables are used to determine the mouse delta position.
+ * @param x The new mouse x position.
+ * @param y The new mouse y position.
+ */
+int mousePrevX = -1, mousePrevY = -1;
+void D3DApp::moveMouse(int x, int y, WPARAM wParam) {
+	float mouseDelta[2] = { mousePrevX - x , y - mousePrevY };
+	switch (wParam)
+	{
+	case MK_SHIFT | MK_MBUTTON:
+		panViewport(0.01f * mouseDelta[0], 0.01f * mouseDelta[1]);
+		break;
+
+	// Middle button is down
+	case MK_MBUTTON:
+		rotateViewport(0.01f * mouseDelta[0], 0.01f * mouseDelta[1]);
+		break;
+
+	default:
+		break;
+	}
+
+	mousePrevX = x;
+	mousePrevY = y;
+}
+
+/**
+ * @brief Rotates the viewport camera around its view target.
+ * @note The derivation of this is shown in the github project under "ViewportRotDerivation.png"
+ * @param newHAngle The angle added to the camera's horizontal angle.
+ * @param newVAngle The angle added to the camera's vertical angle.
+ */
+void D3DApp::rotateViewport(float newHAngle, float newVAngle) {
+	XMFLOAT4 camLocWS = camera.getLocation();
+	XMFLOAT4 camTargetWS = camera.getLookAtTarget();
+	VEC_TO_F4(camLocLocal, (F4_TO_VEC(camLocWS) - F4_TO_VEC(camTargetWS)));
+
+	newHAngle += atanf(camLocLocal.z / camLocLocal.x);
+	newHAngle += (camLocLocal.x < 0.f ? TMath::pi : 0.f);
+
+	newVAngle += atanf(camLocLocal.y / sqrtf(powf(camLocLocal.x, 2.f) + powf(camLocLocal.z, 2.f)));
+	newVAngle = TMath::clamp(TMath::truncate(-TMath::pi_div2, 2), TMath::truncate(TMath::pi_div2, 2), newVAngle);
+
+	float horizontalDistance = abs(camera.getDistanceFromTarget() * cosf(newVAngle));
+	XMVECTOR newCameraLoc = { cosf(newHAngle) , tanf(newVAngle), sinf(newHAngle) };
+	newCameraLoc *= horizontalDistance;
+	newCameraLoc += F4_TO_VEC(camTargetWS);
+	VEC_TO_F4(result, newCameraLoc);
+
+	camera.setLocation(result);
+}
+
+
+/**
+ * @brief Pans the viewport camera.
+ * @param x The change along the camera's local x axis.
+ * @param y The change along the camera's local y axis;
+ */
+void D3DApp::panViewport(float x, float y) {
+	XMFLOAT4 rightVec = camera.getRightVector();
+	XMFLOAT4 upVec = camera.getUpVector();
+	VEC_TO_F4(translationVec, -x * F4_TO_VEC(rightVec) + y * F4_TO_VEC(upVec));
+	camera.panCamera(translationVec);
+}
+
+/**
+ * @brief Handles input from the scroll wheel by zooming the viewport camera.
+ * @param scrollMultiple The scroll wheel multiple passed in by the windows procedure.
+ */
+void D3DApp::scrollMouse(int scrollMultiple) {
+	XMFLOAT4 camLocWS = camera.getLocation();
+	XMFLOAT4 camTargetWS = camera.getLookAtTarget();
+	VEC_TO_F4(camLocLocal, (F4_TO_VEC(camLocWS) - F4_TO_VEC(camTargetWS)));
+
+	if (scrollMultiple != 0) {
+		XMVECTOR vec = F4_TO_VEC(camLocLocal) * (scrollMultiple < 0 ? zoomMultiple : 1.f/zoomMultiple);
+		VEC_TO_F4(result, vec + F4_TO_VEC(camTargetWS));
+		camera.setLocation(result);
+	}
+}
+
+/**
+ * @brief Sends the camera location and view target back to their default startup locations.
+ */
+void D3DApp::centerViewport() {
+	camera.setLocation(defaultCamLoc);
+	camera.setLookAtTarget(defaultCamViewTarget);
+}
+
 /**
  * @brief Renders all the non-hidden meshes in the application.
  */
 void D3DApp::render() 
 {
+	timer.setPreRenderTime();
 	deviceContext->ClearRenderTargetView(renderTargetView.Get(), backgroundColour);
 	deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0U);
 
@@ -350,5 +447,9 @@ void D3DApp::render()
 		deviceContext->DrawIndexed(mesh->getIndexCount(), mesh->startIDBIndex, mesh->startVBIndex);
 	}
 
+	timer.setPostRenderTime();
+	Sleep(timer.getPostRenderSleepTime(120));
 	swapchain->Present(0U, 0U);
 }
+
+D3DApp* appRef = nullptr;

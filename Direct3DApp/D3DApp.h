@@ -9,8 +9,10 @@
 #include "Mesh.h"
 #include "AppTypes.h"
 #include "Camera.h"
+#include "AppTimer.h"
 
 using std::vector;
+extern class D3DApp* appRef;
 
 class D3DApp {
 	HWND viewportWindow;
@@ -18,12 +20,19 @@ class D3DApp {
 
 	CBuffer constBufferPerFrame;
 
-	/* App */
+	/* Camera */
 	Camera camera;
+	const XMFLOAT4 defaultCamLoc = { 10.f, 10.f, 10.f, 1.f };
+	const XMFLOAT4 defaultCamViewTarget = { 0.f, 0.f, 0.f, 1.f };
+	const float zoomMultiple = 1.2f;
+
+	/* App */
 	vector<Mesh*> meshes = {};
 	UINT nextFreeVBIndex = 0;
 	UINT nextFreeIDBIndex = 0;
 	float backgroundColour[4]{ 0.f, 0.f, 0.f, 1.f };
+	class AppTimer timer;
+
 
 	/* Pipeline Objects */
 	ComPtr<ID3D11Device> device;
@@ -50,9 +59,13 @@ public:
 	ID3D11Device* getDevice();
 	void initializeApp(InitializationData* initData);
 	void addMesh(Mesh* mesh);
+	void moveMouse(int x, int y, WPARAM wParam);
+	void scrollMouse(int scrollMultiple);
+	void centerViewport();
 	void render();
 
 private:
+	// Initialization
 	void setPipelineStateForRendering(Mesh* mesh);
 	void createWindow(InitializationData* initData);
 	HRESULT createDeviceAndContext();
@@ -67,6 +80,10 @@ private:
 	HRESULT createAndBindConstantBuffer();
 	void bindPixelShader(ID3D11PixelShader* pixelShader);
 	void bindVertexShader(ID3D11VertexShader* vertexShader);
+
+	// Runtime
+	void rotateViewport(float horizontalAngle, float verticalAngle);
+	void panViewport(float x, float y);
 };
 
 struct D3DApp::InitializationData {

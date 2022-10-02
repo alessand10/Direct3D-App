@@ -1,5 +1,5 @@
 #include "Camera.h"
-
+#include "Utilities.h"
 
 /**
  * @brief Initializes a camera object with default settings.
@@ -10,9 +10,9 @@
  */
 Camera::Camera(float defFOV, float defAspectRatio, float defNearZ, float defFarZ)
 {
-    location = XMVECTOR{ 10.f, 10.f, 10.f, 1.f };
-    viewDirection = XMVECTOR{ 0.f, 0.f, 0.f, 1.f };
-    upDirection = XMVECTOR{ 0.f, 1.f, 0.f, 1.f };
+    location = XMFLOAT4{ 10.f, 10.f, 10.f, 1.f };
+    lookAt = XMFLOAT4{ 0.f, 0.f, 0.f, 1.f };
+    upDirection = XMFLOAT4{ 0.f, 1.f, 0.f, 1.f };
     fovInRadians = defFOV;
     aspectRatio = defAspectRatio;
     nearClippingPlane = defNearZ;
@@ -52,7 +52,7 @@ XMMATRIX Camera::generateWorldViewProjMatrix(XMMATRIX world)
  */
 XMMATRIX Camera::getViewMatrix()
 {
-    return XMMatrixLookAtLH(location, viewDirection, upDirection);
+    return XMMatrixLookAtLH(XMLoadFloat4(&location), XMLoadFloat4(&lookAt), XMLoadFloat4(&upDirection));
 }
 
 /**
@@ -62,4 +62,65 @@ XMMATRIX Camera::getViewMatrix()
 XMMATRIX Camera::getProjMatrix()
 {
     return XMMatrixPerspectiveFovLH(fovInRadians, aspectRatio, nearClippingPlane, farClippingPlane);
+}
+
+void Camera::panCamera(XMFLOAT4 translationVector)
+{
+    VEC_TO_F4(result1, (F4_TO_VEC(location) + F4_TO_VEC(translationVector)));
+    location = result1;
+    VEC_TO_F4(result2, (F4_TO_VEC(lookAt) + F4_TO_VEC(translationVector)));
+    lookAt = result2;
+}
+
+
+float Camera::getDistanceFromTarget() {
+    return XMVectorGetX(XMVector3Length(XMLoadFloat4(&location) - XMLoadFloat4(&lookAt)));
+}
+
+XMFLOAT4 Camera::getLocation() {
+    return location;
+}
+
+void Camera::setLocation(float x, float y, float z) {
+    location.x = x;
+    location.y = y;
+    location.z = z;
+}
+
+void Camera::setLocation(XMFLOAT4 loc) {
+    location = loc;
+    loc.w = 1.f;
+}
+
+void Camera::setLookAtTarget(XMFLOAT4 target) {
+    lookAt = target;
+}
+
+XMFLOAT4 Camera::getLeftVector() {
+    XMFLOAT4 forwardVec = getForwardVector();
+    VEC_TO_F4(result, XMVector3Cross(F4_TO_VEC(upDirection), F4_TO_VEC(forwardVec)));
+    return result;
+}
+
+XMFLOAT4 Camera::getRightVector() {
+    XMFLOAT4 forwardVec = getForwardVector();
+    VEC_TO_F4(result, -XMVector3Cross(F4_TO_VEC(upDirection), F4_TO_VEC(forwardVec)));
+    return result;
+}
+
+XMFLOAT4 Camera::getForwardVector() {
+    VEC_TO_F4(result, XMVector3Normalize(F4_TO_VEC(lookAt) - F4_TO_VEC(location)));
+    return result;
+}
+
+XMFLOAT4 Camera::getUpVector() {
+    XMFLOAT4 rightVec = getRightVector();
+    XMFLOAT4 forwardVec = getForwardVector();
+    VEC_TO_F4(result, XMVector3Normalize(XMVector3Cross(F4_TO_VEC(rightVec), F4_TO_VEC(forwardVec))));
+    return result;
+
+}
+
+XMFLOAT4 Camera::getLookAtTarget() {
+    return lookAt;
 }

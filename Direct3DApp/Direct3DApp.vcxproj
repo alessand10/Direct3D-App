@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AppTimer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="D3DApp.cpp" />
     <ClCompile Include="FileReader.cpp" />
@@ -149,6 +150,7 @@
     <ClCompile Include="ViewportWindowProc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AppTimer.h" />
     <ClInclude Include="AppTypes.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Common.h" />
@@ -157,6 +159,7 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PixelShader.h" />
     <ClInclude Include="ShaderBase.h" />
+    <ClInclude Include="Utilities.h" />
     <ClInclude Include="VertexShader.h" />
     <ClInclude Include="ViewportWindowProc.h" />
   </ItemGroup>
