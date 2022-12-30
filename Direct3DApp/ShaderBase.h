@@ -4,4 +4,5 @@
 
 class ShaderBase {
 protected:
+public:
 };

@@ -71,11 +71,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(DXSDK_DIR)Include;$(WindowsSDK_IncludePath);$(VC_IncludePath);C:\Users\Alessandro Genovese\source\repos\DataStructures\DataStructures;$(IncludePath)</IncludePath>
+    <IncludePath>C:\DirectX\DirectXTK\Inc;$(DXSDK_DIR)Include;$(WindowsSDK_IncludePath);$(VC_IncludePath);C:\Users\Alessandro Genovese\source\repos\DataStructures\DataStructures;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
+    <SourcePath>C:\DirectX\DirectXTK\Src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(DXSDK_DIR)Include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>C:\DirectX\DirectXTK\Inc;$(DXSDK_DIR)Include;$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <SourcePath>C:\DirectX\DirectXTK\Src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -141,6 +143,7 @@
   <ItemGroup>
     <ClCompile Include="AppTimer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="D3DApp.cpp" />
     <ClCompile Include="FileReader.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -154,6 +157,7 @@
     <ClInclude Include="AppTypes.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="D3DApp.h" />
     <ClInclude Include="FileReader.h" />
     <ClInclude Include="Mesh.h" />
@@ -162,22 +166,6 @@
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="VertexShader.h" />
     <ClInclude Include="ViewportWindowProc.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="PixelShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
-    </FxCompile>
-    <FxCompile Include="VertexShader.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
-    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

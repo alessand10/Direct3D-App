@@ -8,3 +8,4 @@ PixelShader::PixelShader(const char* byteCodeFile, D3DApp* app)
 	SIZE_T byteCodeLength = FileReader::readAllContentsOfFile(byteCodeFile, &byteCode);
 	app->getDevice()->CreatePixelShader(byteCode.get(), byteCodeLength, nullptr, &pixelShader);
 }
+

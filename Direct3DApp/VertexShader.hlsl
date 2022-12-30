@@ -2,7 +2,23 @@ cbuffer ConstantBuffer : register(b0) {
 	matrix worldViewProj;
 }
 
-float4 main(float4 pos : POSITION, float4 normal : NORMAL, float2 texCoord : TEXCOORD) : SV_POSITION
+struct VertDataIn {
+	float4 pos : POSITION;
+	float4 normal : NORMAL;
+	float2 texCoord : TEXCOORD;
+};
+
+struct VertDataOut {
+	float4 pos : SV_POSITION;
+	float4 normal : NORMAL;
+	float2 texCoord : TEXCOORD;
+};
+
+VertDataOut main(VertDataIn input)
 {
-	return mul(pos, worldViewProj);
+	VertDataOut output;
+	output.pos = mul(input.pos, worldViewProj);
+	output.normal = input.normal;
+	output.texCoord = input.texCoord;
+	return output;
 }

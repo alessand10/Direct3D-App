@@ -16,10 +16,30 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{ac31fed8-5d7c-4266-b061-3ba8d3583e82}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Grid">
+      <UniqueIdentifier>{7ca7380a-ea5f-48c0-b2ff-2b89059a2aaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\ComputeTest">
+      <UniqueIdentifier>{8f9ae8b0-3b05-4cff-8534-eb90f694b0f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\Direct3DApp\PixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Direct3DApp\VertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="GridPixelShader.hlsl">
+      <Filter>Shaders\Grid</Filter>
+    </FxCompile>
+    <FxCompile Include="BasicCompute.hlsl">
+      <Filter>Shaders\ComputeTest</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

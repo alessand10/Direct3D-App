@@ -1,4 +1,19 @@
-float4 main() : SV_TARGET
+struct VertDataOut {
+	float4 pos : SV_POSITION;
+	float4 normal : NORMAL;
+	float2 texCoord : TEXCOORD;
+};
+
+Texture2D tex : register(t3);
+
+SamplerState MeshTextureSampler
 {
-	return float4(0.0f, 0.6f, 0.1f, 1.0f);
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
+
+float4 main(VertDataOut dataOut) : SV_TARGET
+{
+    return tex.Sample(MeshTextureSampler, dataOut.texCoord);
 }

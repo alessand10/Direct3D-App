@@ -5,14 +5,22 @@
 #include <DirectXMath.h>
 #include "PixelShader.h"
 #include "VertexShader.h"
+#include "ComputeShader.h"
 #include <vector>
 #include "Mesh.h"
 #include "AppTypes.h"
 #include "Camera.h"
 #include "AppTimer.h"
+#include <string>
 
 using std::vector;
+using std::string;
 extern class D3DApp* appRef;
+
+struct TextureView {
+	ComPtr<ID3D11Resource> texture;
+	ComPtr<ID3D11ShaderResourceView> resourceView;
+};
 
 class D3DApp {
 	HWND viewportWindow;
@@ -32,6 +40,9 @@ class D3DApp {
 	UINT nextFreeIDBIndex = 0;
 	float backgroundColour[4]{ 0.f, 0.f, 0.f, 1.f };
 	class AppTimer timer;
+	vector<ComPtr<ID3D11Texture2D>> textures = {};
+	vector<ComPtr<ID3D11ShaderResourceView>> srvs = {};
+	vector<ComPtr<ID3D11UnorderedAccessView>> uavs = {};
 
 
 	/* Pipeline Objects */
@@ -54,19 +65,36 @@ class D3DApp {
 	ComPtr<ID3D11Buffer> vertexBuffer;
 	ComPtr<ID3D11Buffer> indexBuffer;
 	ComPtr<ID3D11Buffer> constantBuffer;
+
 public:
+	AppSettings settings;
 	struct InitializationData;
 	ID3D11Device* getDevice();
 	void initializeApp(InitializationData* initData);
+	ComPtr<ID3D11Texture2D> createTextureFromFile(string path);
+	ComPtr<ID3D11Texture2D> createTexture(D3D11_TEXTURE2D_DESC* texDesc, D3D11_SUBRESOURCE_DATA* initialData = nullptr);
+	ComPtr<ID3D11Texture2D> createTexture(UINT16 width, UINT16 height, DXGI_FORMAT fmt, D3D11_USAGE usage, UINT bindFlag, D3D11_SUBRESOURCE_DATA* initialData = nullptr);
+	ComPtr<ID3D11UnorderedAccessView> createUAV(ComPtr<ID3D11Resource> resource);
+	ComPtr<ID3D11ShaderResourceView> createSRV(ComPtr<ID3D11Resource> resource);
+
+	void setComputeShader(ComPtr<ID3D11ComputeShader> cs);
+	void setPixelShader(ComPtr<ID3D11PixelShader> ps);
+	void setVertexShader(ComPtr<ID3D11VertexShader> vs);
+	void beginRendering();
+	void endRendering();
+	void renderMesh(Mesh* mesh);
+
 	void addMesh(Mesh* mesh);
 	void moveMouse(int x, int y, WPARAM wParam);
 	void scrollMouse(int scrollMultiple);
 	void centerViewport();
-	void render();
+	void bindSRV(ShaderTypeSRV type, ComPtr<ID3D11ShaderResourceView> srv, UINT slot);
+	void bindUAV(ShaderTypeUAV type, ComPtr<ID3D11UnorderedAccessView> uav, UINT slot);
+	void dispatchComputeShader(UINT threadGroupCountX, UINT threadGroupCountY, UINT threadGroupCountZ);
+	void destroyObjects();
 
 private:
 	// Initialization
-	void setPipelineStateForRendering(Mesh* mesh);
 	void createWindow(InitializationData* initData);
 	HRESULT createDeviceAndContext();
 	HRESULT createSwapChain(InitializationData* initData);
@@ -84,6 +112,7 @@ private:
 	// Runtime
 	void rotateViewport(float horizontalAngle, float verticalAngle);
 	void panViewport(float x, float y);
+
 };
 
 struct D3DApp::InitializationData {

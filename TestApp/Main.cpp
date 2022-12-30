@@ -8,26 +8,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 	D3DApp app;
 	D3DApp::InitializationData appInitData{ hInstance, CreateSolidBrush(RGB(0, 0, 0)) };
 	app.initializeApp(&appInitData);
+	app.settings.lockMaxFPS = false;
 
+	app.bindSRV(ShaderTypeSRV::PS,
+		app.createSRV(app.createTextureFromFile("C:/Users/Alessandro Genovese/Desktop/womanyellingcat-1573233850.jpg")),
+		0U);
+
+	app.bindSRV(ShaderTypeSRV::PS,
+		app.createSRV(app.createTextureFromFile("C:/Users/Alessandro Genovese/Desktop/5a7801cc489349203e554aec5af3900e.jpg")),
+		1U);
+
+	app.bindSRV(ShaderTypeSRV::PS,
+		app.createSRV(app.createTextureFromFile("C:/Users/Alessandro Genovese/Desktop/hilly_terrain_01_puresky_4k.jpg")),
+		2U);
+
+	T_TEX2D test = app.createTexture(800U, 800U, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D11_USAGE_DEFAULT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
+	T_SRV testSRV = app.createSRV(test);
+	T_UAV testUAV = app.createUAV(test);
+
+	ComputeShader cs("../Debug/BasicCompute.cso", &app);
 	VertexShader cubeVS("../Debug/VertexShader.cso", &app);
 	PixelShader cubePS("../Debug/PixelShader.cso", &app);
+	app.setComputeShader(cs.computeShader);
+	app.setPixelShader(cubePS.pixelShader);
+	app.setVertexShader(cubeVS.vertexShader);
 
 	Mesh mesh;
-	mesh.importFromOBJ("C:/Users/Alessandro Genovese/Desktop/cube.obj");
-	mesh.setPixelShader(&cubePS);
-	mesh.setVertexShader(&cubeVS);
+	mesh.importFromOBJ("C:/Users/Alessandro Genovese/Desktop/SkySphere.obj");
 	app.addMesh(&mesh);
-
-	Mesh mesh2;
-	mesh2.importFromOBJ("C:/Users/Alessandro Genovese/Desktop/cube2.obj");
-	mesh2.setPixelShader(&cubePS);
-	mesh2.setVertexShader(&cubeVS);
-	app.addMesh(&mesh2);
-
-	TCHAR NPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, NPath);
-	std::cout << NPath;
-
 
 	MSG msg = {};
 	while (msg.message != WM_QUIT) {
@@ -37,7 +45,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 			DispatchMessage(&msg);
 		}
 		else {
-			app.render();
+			app.beginRendering();
+			app.bindUAV(ShaderTypeUAV::CS, testUAV, 0U);
+			app.dispatchComputeShader(40u, 40u, 1u);
+			app.bindUAV(ShaderTypeUAV::CS, nullptr, 0U);
+			//app.bindSRV(ShaderTypeSRV::PS, testSRV, 3U);
+			//app.renderMesh(&mesh);
+			//app.bindSRV(ShaderTypeSRV::PS, nullptr, 3U);
+			app.endRendering();
 		}
 	}
 	return S_OK;

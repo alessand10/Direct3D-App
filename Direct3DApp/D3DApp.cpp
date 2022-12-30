@@ -6,6 +6,8 @@
 #include "AppTimer.h"
 #include <string>
 #include <math.h>
+#include <WICTextureLoader.h>
+#include <codecvt>
 #include "Utilities.h"
 
 ID3D11Device* D3DApp::getDevice() {
@@ -21,7 +23,7 @@ void D3DApp::createWindow(InitializationData* initData)
 	viewportClass.lpszClassName = L"Viewport";
 	viewportClass.hInstance = initData->hInstance;
 	viewportClass.lpfnWndProc = ViewportWndProc;
-	viewportClass.hIcon = LoadIconW(initData->hInstance, NULL); //Don't care about Icon right now
+	viewportClass.hIcon = LoadIconW(initData->hInstance, NULL);
 	viewportClass.hCursor = LoadCursorW(initData->hInstance, IDC_HAND);
 	viewportClass.cbSize = sizeof(WNDCLASSEX);
 	viewportClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -61,6 +63,104 @@ void D3DApp::initializeApp(InitializationData* initData)
 	appRef = this;
 }
 
+
+ComPtr<ID3D11Texture2D> D3DApp::createTextureFromFile(string path) {
+	ComPtr<ID3D11Texture2D> textureResource;
+	ComPtr<ID3D11ShaderResourceView> resourceView;
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	CreateWICTextureFromFile(device.Get(), converter.from_bytes(path).c_str(), reinterpret_cast<ID3D11Resource**>(textureResource.GetAddressOf()), &resourceView);
+	textures.push_back(textureResource);
+	return textures.back();
+}
+
+ComPtr<ID3D11Texture2D> D3DApp::createTexture(D3D11_TEXTURE2D_DESC* texDesc, D3D11_SUBRESOURCE_DATA* initialData)
+{
+	ComPtr<ID3D11Texture2D> textureResource;
+	device->CreateTexture2D(texDesc, initialData, textureResource.GetAddressOf());
+	textures.push_back(textureResource);
+	return textures.back();
+}
+
+ComPtr<ID3D11Texture2D> D3DApp::createTexture(UINT16 width, UINT16 height, DXGI_FORMAT fmt, D3D11_USAGE usage, UINT bindFlags, D3D11_SUBRESOURCE_DATA* initialData)
+{
+	D3D11_TEXTURE2D_DESC texDesc;
+	texDesc.Format = fmt;
+	texDesc.ArraySize = 1U;
+	texDesc.BindFlags = bindFlags;
+	texDesc.Height = height;
+	texDesc.Width = width;
+	texDesc.SampleDesc.Count = 1U;
+	texDesc.SampleDesc.Quality = 0U;
+	texDesc.MiscFlags = 0U;
+	texDesc.Usage = usage;
+	texDesc.MipLevels = 1U;
+	texDesc.CPUAccessFlags = 0U;
+
+	switch (usage) {
+	case D3D11_USAGE_STAGING:
+		texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	case D3D11_USAGE_DYNAMIC:
+		texDesc.CPUAccessFlags |= D3D11_CPU_ACCESS_WRITE;
+		break;
+	default:
+		texDesc.CPUAccessFlags = 0U;
+	}
+
+	return createTexture(&texDesc, initialData);
+}
+
+ComPtr<ID3D11UnorderedAccessView> D3DApp::createUAV(ComPtr<ID3D11Resource> resource)
+{
+	ComPtr<ID3D11UnorderedAccessView> uav = nullptr;
+	device->CreateUnorderedAccessView(resource.Get(), nullptr, uav.GetAddressOf());
+	uavs.push_back(uav);
+	return uavs.back();
+}
+
+ComPtr<ID3D11ShaderResourceView> D3DApp::createSRV(ComPtr<ID3D11Resource> resource)
+{
+	ComPtr<ID3D11ShaderResourceView> srv = nullptr;
+	device->CreateShaderResourceView(resource.Get(), nullptr, srv.GetAddressOf());
+	srvs.push_back(srv);
+	return srvs.back();
+}
+
+void D3DApp::setComputeShader(ComPtr<ID3D11ComputeShader> cs)
+{
+	deviceContext->CSSetShader(cs.Get(), nullptr, 0U);
+}
+
+void D3DApp::setPixelShader(ComPtr<ID3D11PixelShader> ps)
+{
+	deviceContext->PSSetShader(ps.Get(), nullptr, 0U);
+}
+
+void D3DApp::setVertexShader(ComPtr<ID3D11VertexShader> vs)
+{
+	deviceContext->VSSetShader(vs.Get(), nullptr, 0U);
+}
+
+void D3DApp::beginRendering()
+{
+	timer.setPreRenderTime();
+	deviceContext->ClearRenderTargetView(renderTargetView.Get(), backgroundColour);
+	deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0U);
+	constBufferPerFrame.worldViewProj = camera.generateWorldViewProjMatrix(XMMatrixIdentity());
+	deviceContext->UpdateSubresource(constantBuffer.Get(), 0U, nullptr, (void*)&constBufferPerFrame, 0U, 0U);
+}
+
+void D3DApp::endRendering()
+{
+	timer.setPostRenderTime();
+	if(settings.lockMaxFPS) Sleep(timer.getPostRenderSleepTime(settings.maxFpsLock));
+	swapchain->Present(0U, 0U);
+}
+
+void D3DApp::renderMesh(Mesh* mesh)
+{
+	deviceContext->DrawIndexed(mesh->getIndexCount(), mesh->startIDBIndex, mesh->startVBIndex);
+}
+
 /**
  * @brief Creates a D3D11 device.
  * @return The result of the device creation call.
@@ -94,7 +194,7 @@ HRESULT D3DApp::createSwapChain(InitializationData* initData)
 	swapChainDesc.BufferDesc.Width = initData->resolution[0];
 	swapChainDesc.BufferDesc.Height = initData->resolution[1];
 	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	swapChainDesc.BufferDesc.RefreshRate.Numerator = 60U;
+	swapChainDesc.BufferDesc.RefreshRate.Numerator = 144U;
 	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1U;
 	swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
@@ -142,8 +242,11 @@ HRESULT D3DApp::createDepthStencilView(InitializationData* initData)
 	depthStencilTexDesc.SampleDesc.Count = 1U;
 	depthStencilTexDesc.SampleDesc.Quality = 0U;
 
+	// Create the texture for depth/stencil testing.
 	HRESULT result = device->CreateTexture2D(&depthStencilTexDesc, nullptr, depthStencilTex.GetAddressOf());
 	if (FAILED(result)) return result;
+	
+	// Create the associated resource view to bind to the output merger stage.
 	return device->CreateDepthStencilView(depthStencilTex.Get(), nullptr, depthStencilView.GetAddressOf());
 }
 
@@ -181,7 +284,7 @@ HRESULT D3DApp::createAndBindVertexBuffer()
 	HRESULT result;
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertexBufferDesc.ByteWidth = sizeof(Vertex) * 1000;
+	vertexBufferDesc.ByteWidth = sizeof(Vertex) * 3000;
 	vertexBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -209,7 +312,7 @@ HRESULT D3DApp::createAndBindIndexBuffer()
 	HRESULT result;
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	indexBufferDesc.ByteWidth = sizeof(UINT) * 1000;
+	indexBufferDesc.ByteWidth = sizeof(UINT) * 6000;
 	indexBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	indexBufferDesc.MiscFlags = 0;
 	indexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -236,8 +339,8 @@ HRESULT D3DApp::createAndBindInputLayout()
 	const UINT numDescs = 3;
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[numDescs] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0U, 0U, D3D11_INPUT_PER_VERTEX_DATA, 0U},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1U, 16U, D3D11_INPUT_PER_VERTEX_DATA, 0U},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 2U, 32U, D3D11_INPUT_PER_VERTEX_DATA, 0U}
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0U, 16U, D3D11_INPUT_PER_VERTEX_DATA, 0U},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0U, 32U, D3D11_INPUT_PER_VERTEX_DATA, 0U}
 	};
 
 	unique_ptr<char[]> byteCode = nullptr;
@@ -299,15 +402,6 @@ void D3DApp::bindVertexShader(ID3D11VertexShader* vertexShader)
 	}
 }
 
-/**
- * @brief Attempts to bind a mesh's vertex and pixel shader to the pipeline.
- * @note A change will only occur if the binded shaders are different from this mesh's shaders.
- * @param mesh The mesh to set up the pipeline for.
- */
-void D3DApp::setPipelineStateForRendering(Mesh* mesh){
-	bindVertexShader(mesh->meshVertexShader->vertexShader.Get());
-	bindPixelShader(mesh->meshPixelShader->pixelShader.Get());
-}
 
 
 /**
@@ -430,26 +524,43 @@ void D3DApp::centerViewport() {
 	camera.setLookAtTarget(defaultCamViewTarget);
 }
 
-/**
- * @brief Renders all the non-hidden meshes in the application.
- */
-void D3DApp::render() 
+
+void D3DApp::bindSRV(ShaderTypeSRV type, ComPtr<ID3D11ShaderResourceView> srv, UINT slot)
 {
-	timer.setPreRenderTime();
-	deviceContext->ClearRenderTargetView(renderTargetView.Get(), backgroundColour);
-	deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0U);
+	switch (type) {
+	case ShaderTypeSRV::VS:
+		deviceContext->VSSetShaderResources(slot, 1U,srv.GetAddressOf());
+		break;
 
-	constBufferPerFrame.worldViewProj = camera.generateWorldViewProjMatrix(XMMatrixIdentity());
-	deviceContext->UpdateSubresource(constantBuffer.Get(), 0U, nullptr, (void*)&constBufferPerFrame, 0U, 0U);
+	case ShaderTypeSRV::CS:
+		deviceContext->CSSetShaderResources(slot, 1U, srv.GetAddressOf());
+		break;
 
-	for (Mesh* mesh : meshes) {
-		setPipelineStateForRendering(mesh);
-		deviceContext->DrawIndexed(mesh->getIndexCount(), mesh->startIDBIndex, mesh->startVBIndex);
+	case ShaderTypeSRV::PS:
+		deviceContext->PSSetShaderResources(slot, 1U, srv.GetAddressOf());
+		break;
+
+	default:
+
+		break;
 	}
-
-	timer.setPostRenderTime();
-	Sleep(timer.getPostRenderSleepTime(120));
-	swapchain->Present(0U, 0U);
 }
+
+void D3DApp::bindUAV(ShaderTypeUAV type, ComPtr<ID3D11UnorderedAccessView> uav, UINT slot)
+{
+	switch (type) {
+	case ShaderTypeUAV::CS:
+		UINT val = 0;
+		deviceContext->CSSetUnorderedAccessViews(slot, 1U, uav.GetAddressOf(), NULL);
+		break;
+	}
+}
+
+
+void D3DApp::dispatchComputeShader(UINT threadGroupCountX, UINT threadGroupCountY, UINT threadGroupCountZ)
+{
+	deviceContext->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+}
+
 
 D3DApp* appRef = nullptr;
